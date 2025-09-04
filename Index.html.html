@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tuition Fee Management System</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+  body { font-family: Arial, sans-serif; margin:0; padding-bottom:60px; background:#f4f4f9; }
+
+  /* Header */
+  .header-box {
+    background: linear-gradient(270deg, #6a11cb, #2575fc, #6a11cb);
+    background-size: 600% 600%;
+    animation: gradientAnimation 15s ease infinite;
+    color: #fff;
+    padding: 25px 15px;
+    margin: 15px auto;
+    border-radius: 12px;
+    box-shadow: 0 6px 15px rgba(0,0,0,0.2);
+    max-width: 800px;
+    text-align: center;
+  }
+  @keyframes gradientAnimation { 0% {background-position:0% 50%;} 50% {background-position:100% 50%;} 100% {background-position:0% 50%;} }
+  .header-content { display:flex; align-items:center; justify-content:center; gap:15px; flex-wrap: wrap; }
+  .header-icon { font-size:40px; color:#fff; animation: iconGlow 2.5s ease-in-out infinite; }
+  @keyframes iconGlow {0% {text-shadow:0 0 5px rgba(255,255,255,0.3);}50%{text-shadow:0 0 15px rgba(255,255,255,0.6);}100%{text-shadow:0 0 5px rgba(255,255,255,0.3);} }
+  .header-box h1 { margin:0; font-size:28px; letter-spacing:1px; text-shadow:1px 1px 3px rgba(0,0,0,0.3); }
+  .header-subtitle { margin-top:4px; font-size:16px; font-weight:400; opacity:0.9; }
+
+  /* Dashboard cards */
+  .container { padding:10px; }
+  .dashboard { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:15px; }
+  .card {
+    background:#fff;
+    border-radius:10px;
+    padding:15px;
+    text-align:center;
+    box-shadow:0 2px 5px rgba(0,0,0,0.1);
+    cursor:pointer;
+    position:relative;
+    transition: transform 0.3s, box-shadow 0.3s, background 0.3s;
+  }
+  .card:hover { transform: translateY(-5px) scale(1.03); box-shadow:0 8px 20px rgba(0,0,0,0.2); background:#f9f9ff; }
+  .card-icon { font-size:30px; display:block; margin-bottom:8px; color:#555; transition: transform 0.3s, color 0.3s; }
+  .card:hover .card-icon { transform: scale(1.3) translateY(-3px); color:#2575fc; }
+  .bold-brown { color:brown; font-weight:bold; }
+  .bold-green { color:green; font-weight:bold; }
+  .bold-red { color:red; font-weight:bold; }
+
+  /* Pop / bounce */
+  @keyframes pop { 0%{transform:scale(1);}50%{transform:scale(1.15);}100%{transform:scale(1);} }
+  .pop { animation: pop 0.5s ease forwards; }
+  @keyframes bounceClick { 0%{transform:scale(1);}30%{transform:scale(1.15);}50%{transform:scale(0.95);}70%{transform:scale(1.05);}100%{transform:scale(1);} }
+  .click-bounce { animation: bounceClick 0.4s ease forwards; }
+
+  /* Continuous pulse */
+  @keyframes subtlePulse {0%{transform:scale(1);}50%{transform:scale(1.02);}100%{transform:scale(1);} }
+  .pulse-all { animation: subtlePulse 4s ease-in-out infinite; }
+
+  /* Overdue number pulse */
+  @keyframes pulseNumber {0%{transform:scale(1);color:red;}50%{transform:scale(1.4);color:darkred;}100%{transform:scale(1);color:red;} }
+  #overdueCount.pulse-number { display:inline-block; animation: pulseNumber 1s infinite; }
+
+  /* Tables & forms */
+  table { width:100%; border-collapse:collapse; margin-top:10px; background:#fff; }
+  th,td { border:1px solid #ccc; padding:6px; text-align:center; font-size:14px; }
+  th { background:#eee; cursor:pointer; user-select:none; }
+  input,select,button { width:100%; padding:6px; margin:4px 0; font-size:14px; }
+  button { background:#007bff; color:#fff; border:none; border-radius:4px; cursor:pointer; }
+  button:hover { background:#0056b3; }
+  .small-btn { padding:3px 6px; font-size:12px; margin:0 2px; }
+
+  /* Sections */
+  .section { display:none; }
+  .active { display:block; }
+  .overdue { background:#fdd; }
+  td[contenteditable="true"] { background:#fffbe6; }
+
+  /* Bottom Nav */
+  .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: #222; display: flex; justify-content: space-around; padding: 4px 0; font-size: 11px; z-index: 1000; }
+  .bottom-nav a { color: #fff; text-decoration: none; text-align: center; flex: 1; padding: 2px 0; }
+  .bottom-nav a i { font-size: 13px; display: block; margin-bottom: 2px; }
+  .bottom-nav a:hover { background: #333; }
+
+  /* Totals row */
+  #feeSummaryTable tbody tr.total-row { position: sticky; bottom:0; background:#f0f0f0; font-weight:bold; z-index:2; box-shadow:0 -2px 4px rgba(0,0,0,0.08); }
+
+  /* Backup/Restore Buttons */
+  .backup-restore { text-align:center; margin:10px; }
+  .backup-restore button { width:auto; display:inline-block; margin: 2px 5px; }
+
+  /* Fee Summary Table improvements */
+  #feeSummaryTable { display:block; max-height:400px; overflow-y:auto; width:100%; border-collapse: collapse; }
+  #feeSummaryTable thead, #feeSummaryTable tbody, #feeSummaryTable tr { display: table; width:100%; table-layout: fixed; }
+  #feeSummaryTable thead th { position: sticky; top:0; background:#eee; z-index:3; text-align:center; box-shadow:0 2px 4px rgba(0,0,0,0.1); }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header-box">
+  <div class="header-content">
+    <i class="fa fa-graduation-cap header-icon"></i>
+    <div>
+      <h1>Tuition Fee Management</h1>
+      <p class="header-subtitle">Manage Students, Fees & Payments Easily</p>
+    </div>
+  </div>
+</div>
+
+<!-- Backup/Restore -->
+<div class="backup-restore">
+  <button onclick="backupData()">💾 Backup Data</button>
+  <input type="file" id="restoreFile" style="display:none;" onchange="restoreData(event)">
+  <button onclick="document.getElementById('restoreFile').click()">📂 Restore Data</button>
+</div>
+
+<!-- Dashboard -->
+<div id="dashboard" class="section active container">
+  <div class="dashboard">
+    <div class="card" id="totalStudentsCard"><i class="fa fa-users card-icon"></i><h3>Total Students</h3><p id="totalStudents" class="bold-brown">0</p></div>
+    <div class="card" id="totalRevenueCard"><i class="fa fa-money-bill-wave card-icon"></i><h3>Total Revenue</h3><p id="totalRevenue" class="bold-green">₹0.00</p></div>
+    <div class="card" id="pendingFeesCard"><i class="fa fa-clock card-icon"></i><h3>Pending Fees</h3><p id="pendingFees" class="bold-red">₹0.00</p></div>
+    <div class="card" id="overdueCard"><i class="fa fa-exclamation-triangle card-icon"></i><h3>Overdue Students</h3><p id="overdueCount" class="bold-red">0</p></div>
+  </div>
+</div>
+
+<!-- Students Section -->
+<div id="studentsSection" class="section container">
+  <h2>Students</h2>
+  <input type="hidden" id="editingStudentId">
+  <input type="text" id="studentName" placeholder="Student name">
+  <input type="text" id="studentClass" placeholder="Class">
+  <input type="number" id="studentFee" placeholder="Total fee (₹)">
+  <input type="date" id="studentDue" placeholder="Due Date">
+  <button onclick="saveStudent()">Save</button>
+  <button onclick="resetStudents()">Reset</button>
+  <table id="studentsTable">
+    <thead><tr><th>Name</th><th>Class</th><th>Fee</th><th>Due Date</th><th>Actions</th></tr></thead>
+    <tbody></tbody>
+  </table>
+</div>
+
+<!-- Payments Section -->
+<div id="paymentsSection" class="section container">
+  <h2>Payments</h2>
+  <select id="paymentStudent"></select>
+  <input type="number" id="paymentAmount" placeholder="Amount (₹)">
+  <button id="addPaymentBtn" onclick="addPayment()">Add Payment</button>
+  <table id="paymentsTable">
+    <thead><tr><th>Student</th><th>Amount</th><th>Date</th><th>Actions</th></tr></thead>
+    <tbody></tbody>
+  </table>
+</div>
+
+<!-- Fee Summary Section -->
+<div id="feeSummarySection" class="section container">
+  <h2>Fee Summary</h2>
+  <input type="text" id="feeSummarySearch" placeholder="Search by student name..." oninput="renderFeeSummary()">
+  <select id="feeSummaryClassFilter" onchange="renderFeeSummary()">
+    <option value="">-- Filter by Class --</option>
+  </select>
+  <table id="feeSummaryTable">
+    <thead>
+      <tr>
+        <th onclick="sortFeeSummary('name')">Name</th>
+        <th onclick="sortFeeSummary('cls')">Class</th>
+        <th onclick="sortFeeSummary('totalFee')">Total Fee</th>
+        <th onclick="sortFeeSummary('paid')">Paid</th>
+        <th onclick="sortFeeSummary('pending')">Pending</th>
+        <th onclick="sortFeeSummary('dueDate')">Due Date</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+</div>
+
+<!-- Bottom Nav -->
+<div class="bottom-nav">
+  <a href="#" onclick="openSection('dashboard')"><i class="fa fa-home"></i>Dashboard</a>
+  <a href="#" onclick="openSection('studentsSection')"><i class="fa fa-user"></i>Students</a>
+  <a href="#" onclick="openSection('paymentsSection')"><i class="fa fa-money-bill"></i>Payments</a>
+  <a href="#" onclick="openSection('feeSummarySection')"><i class="fa fa-list"></i>Summary</a>
+  <a href="#" onclick="clearAllData()"><i class="fa fa-trash"></i>Clear</a>
+</div>
+
+<script>
+// Data
+let students = JSON.parse(localStorage.getItem('students')||'[]');
+let payments = JSON.parse(localStorage.getItem('payments')||'[]');
+let feeSummarySort = { column:null, asc:true };
+
+// Save storage
+function saveStorage(){ 
+  localStorage.setItem('students',JSON.stringify(students)); 
+  localStorage.setItem('payments',JSON.stringify(payments)); 
+  renderAll(); 
+}
+
+// Open section
+function openSection(id){ 
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active')); 
+  document.getElementById(id).classList.add('active'); 
+}
+
+// Animate numbers
+function animateNumber(el, target, isCurrency=true){
+  let current = parseFloat(el.innerText.replace(/[^0-9.]/g,''))||0;
+  let step=(target-current)/30; let count=0;
+  const interval=setInterval(()=>{
+    if(count>=30){ el.innerText=(isCurrency?'₹':'')+target.toFixed(2); el.classList.remove('pop-total'); void el.offsetWidth; el.classList.add('pop-total'); clearInterval(interval); return; }
+    el.innerText=(isCurrency?'₹':'')+(current+step*count).toFixed(2); count++;
+  },15);
+}
+
+// Bounce effect
+function cardClickBounce(cardId){ const card=document.getElementById(cardId); card.classList.remove('click-bounce'); void card.offsetWidth; card.classList.add('click-bounce'); }
+
+// Dashboard
+function renderDashboard(){
+  const total=students.length;
+  const totalRev=payments.reduce((s,p)=>s+p.amount,0);
+  let pending=0, overdue=0;
+  students.forEach(s=>{
+    const paid=payments.filter(p=>p.studentId===s.id).reduce((sum,p)=>sum+p.amount,0);
+    const pend=s.totalFee-paid; pending+=pend;
+    if(s.dueDate && pend>0 && new Date(s.dueDate)<new Date()) overdue++;
+  });
+
+  animateNumber(document.getElementById('totalStudents'), total,false);
+  animateNumber(document.getElementById('totalRevenue'), totalRev);
+  animateNumber(document.getElementById('pendingFees'), pending);
+  animateNumber(document.getElementById('overdueCount'), overdue,false);
+
+  ['totalStudentsCard','totalRevenueCard','pendingFeesCard','overdueCard'].forEach(id=>{
+    const c=document.getElementById(id); 
+    c.classList.remove('pop'); void c.offsetWidth; c.classList.add('pop'); 
+    c.classList.add('pulse-all');
+  });
+
+  const overdueCountEl=document.getElementById('overdueCount');
+  overdue>0?overdueCountEl.classList.add('pulse-number'):overdueCountEl.classList.remove('pulse-number');
+}
+
+// Students
+function saveStudent(){ 
+  const id=document.getElementById('editingStudentId').value;
+  const name=document.getElementById('studentName').value;
+  const cls=document.getElementById('studentClass').value;
+  const fee=parseFloat(document.getElementById('studentFee').value)||0;
+  const due=document.getElementById('studentDue').value;
+  if(!name||!cls||fee<=0) return;
+  if(id){ const idx=students.findIndex(s=>s.id==id); if(idx>-1) students[idx]={id:parseInt(id),name,cls,totalFee:fee,dueDate:due}; } 
+  else students.push({id:Date.now(),name,cls,totalFee:fee,dueDate:due});
+  saveStorage(); resetStudents();
+}
+function resetStudents(){ ['editingStudentId','studentName','studentClass','studentFee','studentDue'].forEach(id=>document.getElementById(id).value=''); }
+function deleteStudent(id){ if(confirm("Delete this student?")){ students=students.filter(s=>s.id!==id); payments=payments.filter(p=>p.studentId!==id); saveStorage(); } }
+function editStudent(id){ const s=students.find(s=>s.id===id); if(!s) return; ['editingStudentId','studentName','studentClass','studentFee','studentDue'].forEach(idf=>document.getElementById(idf).value=s[idf==='editingStudentId'?'id':idf==='studentFee'?'totalFee':idf==='studentDue'?'dueDate':'name']||''); openSection('studentsSection'); }
+
+// Payments
+function addPayment(){ 
+  const studentId=parseInt(document.getElementById('paymentStudent').value); 
+  const amount=parseFloat(document.getElementById('paymentAmount').value)||0;
+  if(!studentId||amount<=0) return;
+  payments.push({studentId, amount, date:new Date().toISOString().slice(0,10)});
+  document.getElementById('paymentAmount').value='';
+  saveStorage(); launchConfetti();
+}
+function deletePayment(idx){ if(confirm("Delete this payment?")){ payments.splice(idx,1); saveStorage(); } }
+function editPayment(idx){ const p=payments[idx]; if(!p) return; document.getElementById('paymentStudent').value=p.studentId; document.getElementById('paymentAmount').value=p.amount; payments.splice(idx,1); saveStorage(); }
+
+// Render tables
+function renderStudents(){ 
+  const tbody=document.querySelector('#studentsTable tbody'); tbody.innerHTML='';
+  students.forEach(s=>{
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td>${s.name}</td><td>${s.cls}</td><td>₹${s.totalFee.toFixed(2)}</td><td>${s.dueDate||''}</td><td><button class="small-btn" onclick="editStudent(${s.id})">✏️</button><button class="small-btn" onclick="deleteStudent(${s.id})">🗑️</button></td>`;
+    tbody.appendChild(tr);
+  });
+  const sel=document.getElementById('paymentStudent'); sel.innerHTML=''; students.forEach(s=>{ const opt=document.createElement('option'); opt.value=s.id; opt.textContent=s.name; sel.appendChild(opt); });
+  populateClassFilter();
+}
+function renderPayments(){ 
+  const tbody=document.querySelector('#paymentsTable tbody'); tbody.innerHTML='';
+  payments.forEach((p,i)=>{ const s=students.find(st=>st.id===p.studentId); const tr=document.createElement('tr'); tr.innerHTML=`<td>${s?s.name:'[Deleted]'}</td><td style="color:green;">₹${p.amount.toFixed(2)}</td><td style="color:orange;">${p.date}</td><td><button class="small-btn" onclick="editPayment(${i})">✏️</button><button class="small-btn" onclick="deletePayment(${i})">🗑️</button></td>`; tbody.appendChild(tr); });
+}
+
+// Fee Summary
+function populateClassFilter(){ const filter=document.getElementById('feeSummaryClassFilter'); const classes=[...new Set(students.map(s=>s.cls))]; filter.innerHTML='<option value="">-- Filter by Class --</option>'; classes.forEach(c=>{ const opt=document.createElement('option'); opt.value=c; opt.textContent=c; filter.appendChild(opt); }); }
+
+function renderFeeSummary(){
+  const tbody=document.querySelector('#feeSummaryTable tbody'); tbody.innerHTML='';
+  let filtered=students; const search=document.getElementById('feeSummarySearch').value.toLowerCase();
+  if(search) filtered=filtered.filter(s=>s.name.toLowerCase().includes(search));
+  const clsFilter=document.getElementById('feeSummaryClassFilter').value; if(clsFilter) filtered=filtered.filter(s=>s.cls===clsFilter);
+
+  let totalFeeSum=0,totalPaidSum=0,totalPendingSum=0;
+
+  filtered.forEach(s=>{
+    const paid=payments.filter(p=>p.studentId===s.id).reduce((sum,p)=>sum+p.amount,0);
+    const pending=s.totalFee-paid;
+    totalFeeSum+=s.totalFee; totalPaidSum+=paid; totalPendingSum+=pending;
+
+    const tr=document.createElement('tr'); if(s.dueDate && pending>0 && new Date(s.dueDate)<new Date()) tr.classList.add('overdue');
+    tr.innerHTML=`<td>${s.name}</td><td>${s.cls}</td><td>₹${s.totalFee.toFixed(2)}</td><td style="color:green;">₹${paid.toFixed(2)}</td><td style="color:red;">₹${pending.toFixed(2)}</td><td>${s.dueDate||''}</td>`;
+    tbody.appendChild(tr);
+  });
+
+  const totalTr=document.createElement('tr'); totalTr.classList.add('total-row');
+  totalTr.innerHTML=`<td colspan="2" style="font-weight:bold;">Total</td><td id="totalFeeCell" style="font-weight:bold;">₹0.00</td><td id="totalPaidCell" style="font-weight:bold;color:green;">₹0.00</td><td id="totalPendingCell" style="font-weight:bold;color:red;">₹0.00</td><td></td>`;
+  tbody.appendChild(totalTr);
+
+  animateNumber(document.getElementById('totalFeeCell'),totalFeeSum);
+  animateNumber(document.getElementById('totalPaidCell'),totalPaidSum);
+  animateNumber(document.getElementById('totalPendingCell'),totalPendingSum);
+}
+
+function sortFeeSummary(col){
+  if(feeSummarySort.column===col) feeSummarySort.asc=!feeSummarySort.asc; else { feeSummarySort.column=col; feeSummarySort.asc=true; }
+
+  students.sort((a,b)=>{
+    let valA,valB;
+    if(col==='paid'){ valA=payments.filter(p=>p.studentId===a.id).reduce((sum,p)=>sum+p.amount,0); valB=payments.filter(p=>p.studentId===b.id).reduce((sum,p)=>sum+p.amount,0); }
+    else if(col==='pending'){ valA=a.totalFee - payments.filter(p=>p.studentId===a.id).reduce((sum,p)=>sum+p.amount,0); valB=b.totalFee - payments.filter(p=>p.studentId===b.id).reduce((sum,p)=>sum+p.amount,0); }
+    else { valA=a[col]||''; valB=b[col]||''; }
+    if(typeof valA==='string') valA=valA.toLowerCase(); if(typeof valB==='string') valB=valB.toLowerCase();
+    return valA<valB?feeSummarySort.asc?-1:1:valA>valB?feeSummarySort.asc?1:-1:0;
+  });
+  renderFeeSummary();
+}
+
+// Backup & Restore
+function backupData(){ const data={students,payments}; const blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='tuition_data_backup.json'; a.click(); URL.revokeObjectURL(url); }
+function restoreData(event){ const file=event.target.files[0]; if(!file) return; const reader=new FileReader(); reader.onload=function(e){ try{ const obj=JSON.parse(e.target.result); if(obj.students&&obj.payments){ students=obj.students; payments=obj.payments; saveStorage(); alert("Data restored successfully!"); } else alert("Invalid backup file."); } catch(err){ alert("Error reading file: "+err); } }; reader.readAsText(file); }
+
+// Clear all
+function clearAllData(){ if(confirm("Clear all data?")){ students=[]; payments=[]; saveStorage(); } }
+
+// Confetti
+function launchConfetti(){ for(let i=0;i<25;i++){ const c=document.createElement('div'); c.style.width='6px'; c.style.height='6px'; c.style.borderRadius='50%'; c.style.position='fixed'; c.style.left=Math.random()*window.innerWidth+'px'; c.style.backgroundColor=`hsl(${Math.random()*360},80%,60%)`; c.style.zIndex='9999'; c.style.opacity='0.9'; c.style.pointerEvents='none'; c.style.animation='fall 1.2s linear forwards'; document.body.appendChild(c); c.addEventListener('animationend',()=>c.remove()); } }
+const styleSheet = document.createElement("style"); styleSheet.innerText="@keyframes fall{0%{transform:translateY(0) rotate(0deg); opacity:1;}100%{transform:translateY(100vh) rotate(720deg); opacity:0;}}"; document.head.appendChild(styleSheet);
+
+// Card click navigation
+document.getElementById('totalStudentsCard').onclick=()=>{ cardClickBounce('totalStudentsCard'); openSection('studentsSection'); };
+document.getElementById('totalRevenueCard').onclick=()=>{ cardClickBounce('totalRevenueCard'); openSection('paymentsSection'); };
+document.getElementById('pendingFeesCard').onclick=()=>{ cardClickBounce('pendingFeesCard'); openSection('feeSummarySection'); };
+document.getElementById('overdueCard').onclick=()=>{ cardClickBounce('overdueCard'); openSection('feeSummarySection'); document.getElementById('feeSummarySearch').value=''; renderFeeSummary(); };
+
+// Render all
+function renderAll(){ renderDashboard(); renderStudents(); renderPayments(); renderFeeSummary(); }
+renderAll();
+</script>
+</body>
+</html>
